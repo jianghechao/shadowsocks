@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, \
 
 import time
 import socket
+import socks
 import errno
 import struct
 import logging
@@ -320,6 +321,7 @@ class TCPRelayHandler(object):
             self.destroy()
 
     def _create_remote_socket(self, ip, port):
+
         addrs = socket.getaddrinfo(ip, port, 0, socket.SOCK_STREAM,
                                    socket.SOL_TCP)
         if len(addrs) == 0:
@@ -329,7 +331,9 @@ class TCPRelayHandler(object):
             if common.to_str(sa[0]) in self._forbidden_iplist:
                 raise Exception('IP %s is in forbidden list, reject' %
                                 common.to_str(sa[0]))
-        remote_sock = socket.socket(af, socktype, proto)
+        # remote_sock = socket.socket(af, socktype, proto)
+        socks.set_default_proxy(socks.PROXY_TYPE_SOCKS5,'183.239.240.138',1080)
+        remote_sock = socks.socksocket(socket.AF_INET,socket.SOCK_STREAM,socket.IPPROTO_TCP)
         self._remote_sock = remote_sock
         self._fd_to_handlers[remote_sock.fileno()] = self
         remote_sock.setblocking(False)
@@ -366,6 +370,7 @@ class TCPRelayHandler(object):
                         remote_sock = self._create_remote_socket(remote_addr,
                                                                  remote_port)
                         try:
+                            print(remote_addr,remote_port)
                             remote_sock.connect((remote_addr, remote_port))
                         except (OSError, IOError) as e:
                             if eventloop.errno_from_exception(e) == \
